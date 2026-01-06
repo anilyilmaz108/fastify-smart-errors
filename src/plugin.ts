@@ -1,10 +1,11 @@
+import fp from 'fastify-plugin'
 import { FastifyPluginAsync } from 'fastify'
 import { SmartErrorsOptions } from './types.js'
 import { SmartError } from './smart-error.js'
 import { formatError } from './error-formatter.js'
 import { resolveLanguage } from './language.js'
 
-export const smartErrors: FastifyPluginAsync<SmartErrorsOptions> =
+const smartErrorsPlugin: FastifyPluginAsync<SmartErrorsOptions> =
   async (fastify, options) => {
 
     const {
@@ -16,7 +17,7 @@ export const smartErrors: FastifyPluginAsync<SmartErrorsOptions> =
     fastify.setErrorHandler((error, request, reply) => {
 
       if (error instanceof SmartError) {
-        const def = errors[error.code]
+        const def = errors?.[error.code]
 
         if (!def) {
           reply.status(500).send(formatError(
@@ -40,7 +41,6 @@ export const smartErrors: FastifyPluginAsync<SmartErrorsOptions> =
         return
       }
 
-      // Validation errors (Fastify / Ajv)
       if ((error as any).validation) {
         reply.status(400).send(formatError(
           'VALIDATION_ERROR',
@@ -50,7 +50,6 @@ export const smartErrors: FastifyPluginAsync<SmartErrorsOptions> =
         return
       }
 
-      // Unknown error
       reply.status(500).send(formatError(
         'INTERNAL_SERVER_ERROR',
         'Internal server error',
@@ -58,3 +57,7 @@ export const smartErrors: FastifyPluginAsync<SmartErrorsOptions> =
       ))
     })
   }
+
+export const smartErrors = fp(smartErrorsPlugin, {
+  name: 'fastify-smart-errors'
+})
